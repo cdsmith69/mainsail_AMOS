@@ -1,5 +1,7 @@
 name: Release
 
+run-name: Release v${{ github.event.inputs.version }}
+
 on:
   workflow_dispatch:
     inputs:
@@ -8,15 +10,18 @@ on:
         description: New version number in X.Y.Z
         required: true
 
+permissions:
+  contents: write
+
 jobs:
   push-version-number:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout develop branch
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
           ref: 'develop'
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: get-npm-version
         id: package-version
@@ -41,25 +46,34 @@ jobs:
     needs: ['push-version-number']
     runs-on: ubuntu-latest
     steps:
-      - uses: everlytic/branch-merge@1.1.5
+      - name: Checkout main
+        uses: actions/checkout@v6
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          source_ref: 'develop'
-          target_branch: 'main'
-          commit_message_template: '[Automated] Merged {source_ref} into target {target_branch}'
+          ref: 'main'
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+
+      - name: Fast-forward merge from develop
+        shell: bash
+        run: |
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git merge --ff-only origin/develop
+          git push origin main
 
   release:
     needs: ['update-main-branch']
+    name: Build and release
     runs-on: ubuntu-latest
     steps:
       - name: Fetch repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           ref: 'main'
           fetch-depth: 0
 
       - name: Install node
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v6
         with:
           node-version: 20
 
@@ -80,19 +94,19 @@ jobs:
           echo "TAG_NAME=$(git describe --tags $(git rev-list --tags --max-count=1))" >> $GITHUB_OUTPUT
 
       - name: Generate a changelog
-        uses: orhun/git-cliff-action@v2
+        uses: orhun/git-cliff-action@v4
         id: generate-changelog
         with:
           config: ./cliff-release.toml
           args: ${{ steps.latest_tag.outputs.TAG_NAME }}..HEAD
 
       - name: Create release and upload build
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         id: create-release
         with:
+          token: ${{ secrets.GITHUB_TOKEN }}
           name: v${{ github.event.inputs.version }}
           tag_name: v${{ github.event.inputs.version }}
-          token: ${{ secrets.GITHUB_TOKEN }}
           files: ./mainsail.zip
           body: ${{ steps.generate-changelog.outputs.content }}
 
@@ -100,17 +114,27 @@ jobs:
         shell: bash
         run: cp ./remote/* ./dist/
 
+      - name: Upload to remote server
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.6
+        with:
+          server: ${{ secrets.REMOTEHOST }}
+          username: ${{ secrets.REMOTEUSER }}
+          password: ${{ secrets.REMOTEPASSWORD }}
+          dangerous-clean-slate: true
+          exclude: .htaccess
+          local-dir: ./dist/
+
   update-changelog:
     needs: ['release']
     name: Generate changelog
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v6
         with:
           ref: 'develop'
-          token: ${{ secrets.GITHUB_TOKEN }}
           fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Get latest tag
         id: latest_tag
@@ -119,7 +143,7 @@ jobs:
           echo "TAG_NAME=$(git describe --tags $(git rev-list --tags --max-count=1))" >> $GITHUB_OUTPUT
 
       - name: Generate a changelog
-        uses: orhun/git-cliff-action@v2
+        uses: orhun/git-cliff-action@v4
         id: git-cliff
         with:
           config: cliff.toml
@@ -130,7 +154,7 @@ jobs:
       - name: Show CHANGELOG
         run: |
           cat CHANGELOG.md
-      - uses: stefanzweifel/git-auto-commit-action@v4
+      - uses: stefanzweifel/git-auto-commit-action@v7
         with:
           commit_message: 'docs(changelog): update changelog'
           file_pattern: CHANGELOG.md

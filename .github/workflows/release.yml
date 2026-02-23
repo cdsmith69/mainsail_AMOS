@@ -114,16 +114,6 @@ jobs:
         shell: bash
         run: cp ./remote/* ./dist/
 
-      - name: Upload to remote server
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.6
-        with:
-          server: ${{ secrets.REMOTEHOST }}
-          username: ${{ secrets.REMOTEUSER }}
-          password: ${{ secrets.REMOTEPASSWORD }}
-          dangerous-clean-slate: true
-          exclude: .htaccess
-          local-dir: ./dist/
-
   update-changelog:
     needs: ['release']
     name: Generate changelog

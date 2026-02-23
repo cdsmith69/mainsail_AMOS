@@ -137,7 +137,7 @@ jobs:
         id: git-cliff
         with:
           config: cliff.toml
-          args: v0.0.4..${{ steps.latest_tag.outputs.TAG_NAME }}
+          args: v0.1.0..${{ steps.latest_tag.outputs.TAG_NAME }}
         env:
           OUTPUT: ${{ github.workspace }}/CHANGELOG.md
 

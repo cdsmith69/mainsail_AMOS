@@ -20,7 +20,7 @@ export default function buildReleaseInfo(): PluginOption {
                 await releaseInfoFile.writeFile(
                     JSON.stringify({
                         project_name: 'mainsail',
-                        project_owner: 'lulzbot3d',
+                        project_owner: 'cdsmith69',
                         version: `v${versionIdentifier}`,
                     })
                 )

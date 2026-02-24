@@ -1,14 +1,23 @@
 <template>
-    <v-item-group class="d-inline-block">
-        <v-btn
-            small
-            :color="color"
-            :class="paramArray.length ? 'macroWithParameters' : ''"
-            :loading="loadings.includes('macro_' + macro.name)"
-            :disabled="disabled"
-            @click="doSendMacro(macro.name)">
-            {{ alias ? alias : macro.name.replace(/_/g, ' ') }}
-        </v-btn>
+    <v-item-group class="d-inline-flex">
+        <v-tooltip :disabled="!hasDescription" top>
+            <template #activator="{ on, attrs }">
+                <v-btn
+                    small
+                    :color="color"
+                    :class="paramArray.length ? 'macroWithParameters' : ''"
+                    :loading="loadings.includes('macro_' + macro.name)"
+                    :disabled="disabled"
+                    class="flex-grow-1"
+                    v-bind="attrs"
+                    v-on="on"
+                    @click="doSendMacro(macro.name)">
+                    <v-icon v-if="icon" small left>{{ icon }}</v-icon>
+                    {{ alias ? alias : macro.name.replace(/_/g, ' ') }}
+                </v-btn>
+            </template>
+            <span>{{ klipperMacro.description }}</span>
+        </v-tooltip>
         <template v-if="paramArray.length">
             <v-menu v-if="!isMobile" offset-y :close-on-content-click="false">
                 <template #activator="{ on, attrs }">
@@ -118,6 +127,8 @@ interface params {
     components: { Panel },
 })
 export default class MacroButton extends Mixins(BaseMixin) {
+    DEFAULT_DESC = 'G-Code macro'
+
     /**
      * Icons
      */
@@ -125,9 +136,9 @@ export default class MacroButton extends Mixins(BaseMixin) {
     mdiMenuDown = mdiMenuDown
     mdiRefresh = mdiRefresh
 
-    private paramArray: string[] = []
-    private params: params = {}
-    private paramsDialog = false
+    paramArray: string[] = []
+    params: params = {}
+    paramsDialog = false
 
     @Prop({ required: true })
     declare readonly macro: GuiMacrosStateMacrogroupMacro | PrinterStateMacro
@@ -140,6 +151,9 @@ export default class MacroButton extends Mixins(BaseMixin) {
 
     @Prop({ default: false })
     declare readonly disabled: boolean
+
+    @Prop({ default: null })
+    declare readonly icon: string | null
 
     get klipperMacro() {
         return this.$store.getters['printer/getMacro'](this.macro.name)
@@ -165,6 +179,10 @@ export default class MacroButton extends Mixins(BaseMixin) {
 
     get paramsOverlayWidth() {
         return 200 * this.paramCols
+    }
+
+    get hasDescription(): boolean {
+        return this.klipperMacro.description && this.klipperMacro.description !== this.DEFAULT_DESC
     }
 
     @Watch('klipperMacro')

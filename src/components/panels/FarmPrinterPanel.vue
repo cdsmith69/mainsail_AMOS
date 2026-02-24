@@ -1,5 +1,6 @@
 <template>
     <panel
+        ref="panel"
         :icon="mdiPrinter3d"
         :title="printer_name"
         card-class="farmprinter-panel"
@@ -108,7 +109,6 @@
                 </div>
             </template>
         </v-hover>
-        <resize-observer @notify="handleResize" />
     </panel>
 </template>
 
@@ -139,10 +139,12 @@ export default class FarmPrinterPanel extends Mixins(BaseMixin, ThemeMixin, Webc
     mdiWebcamOff = mdiWebcamOff
     mdiFileOutline = mdiFileOutline
 
-    private imageHeight = 200
+    imageHeight = 200
+    resizeObserver: ResizeObserver | null = null
 
     @Prop({ type: Object, required: true }) declare printer: FarmPrinterState
     @Ref() declare readonly imageDiv: Vue
+    @Ref() declare readonly panel: Vue
 
     get printerUrl() {
         const thisUrl = window.location.href.split('/')
@@ -228,12 +230,25 @@ export default class FarmPrinterPanel extends Mixins(BaseMixin, ThemeMixin, Webc
     }
 
     clickPrinter() {
-        if (this.printer.socket.isConnected) this.$store.dispatch('changePrinter', { printer: this.printer._namespace })
-        else this.$store.dispatch('farm/' + this.printer._namespace + '/reconnect')
+        // If the printer is already connected, just switch to it
+        if (this.printer.socket.isConnected) {
+            this.$store.dispatch('changePrinter', { printer: this.printer._namespace })
+            return
+        }
+
+        // Otherwise, reconnect to the printer
+        this.$store.dispatch('farm/' + this.printer._namespace + '/reconnect')
     }
 
     mounted() {
         this.calcImageHeight()
+
+        this.resizeObserver = new ResizeObserver(() => this.handleResize())
+        this.resizeObserver.observe(this.panel.$el)
+    }
+
+    beforeDestroy() {
+        this.resizeObserver?.disconnect()
     }
 
     calcImageHeight() {

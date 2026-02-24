@@ -25,7 +25,7 @@
             </v-list>
             <v-divider class="_fix_transparency" />
             <v-list dense class="py-0">
-                <v-list-item link @click="cooldown">
+                <v-list-item link @click="btnCoolDown">
                     <div class="d-flex align-center _preset-title">
                         <v-icon small color="primary" class="mr-1">{{ mdiSnowflake }}</v-icon>
                         <span class="primary--text">{{ $t('Panels.TemperaturePanel.Cooldown') }}</span>
@@ -63,12 +63,17 @@ import { Mixins } from 'vue-property-decorator'
 import BaseMixin from '@/components/mixins/base'
 import { GuiPresetsStatePreset } from '@/store/gui/presets/types'
 import { mdiFire, mdiMenuDown, mdiSnowflake } from '@mdi/js'
+import ConfirmationDialog from '@/components/dialogs/ConfirmationDialog.vue'
 
-@Component
+@Component({
+    components: { ConfirmationDialog },
+})
 export default class TemperaturePanelPresets extends Mixins(BaseMixin) {
     mdiFire = mdiFire
     mdiMenuDown = mdiMenuDown
     mdiSnowflake = mdiSnowflake
+
+    showCoolDownDialog = false
 
     get presets(): GuiPresetsStatePreset[] {
         return this.$store.getters['gui/presets/getPresets'] ?? []
@@ -76,6 +81,10 @@ export default class TemperaturePanelPresets extends Mixins(BaseMixin) {
 
     get cooldownGcode(): string {
         return this.$store.getters['gui/presets/getCooldownGcode']
+    }
+
+    get confirmOnCoolDown(): boolean {
+        return this.$store.state.gui.uiSettings.confirmOnCoolDown
     }
 
     preheat(preset: GuiPresetsStatePreset): void {
@@ -109,6 +118,15 @@ export default class TemperaturePanelPresets extends Mixins(BaseMixin) {
                 this.$socket.emit('printer.gcode.script', { script: preset.gcode })
             }, 100)
         }
+    }
+
+    btnCoolDown(): void {
+        if (this.confirmOnCoolDown) {
+            this.showCoolDownDialog = true
+            return
+        }
+
+        this.cooldown()
     }
 
     cooldown(): void {

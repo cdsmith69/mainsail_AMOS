@@ -7,7 +7,8 @@ export interface GuiWebcamStateWebcam {
     location?: string
     service:
         | 'hlsstream'
-        | 'ipstream'
+        | 'html-video'
+        | 'iframe'
         | 'jmuxer-stream'
         | 'mjpegstreamer'
         | 'mjpegstreamer-adaptive'
@@ -28,6 +29,9 @@ export interface GuiWebcamStateWebcam {
     extra_data?: {
         enableAudio?: boolean
         hideFps?: boolean
+        nozzleCrosshair?: boolean
+        nozzleCrosshairColor?: string
+        nozzleCrosshairSize?: number
     }
     source?: 'config' | 'database'
 }

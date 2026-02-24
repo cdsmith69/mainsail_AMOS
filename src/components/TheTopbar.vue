@@ -3,22 +3,9 @@
         <v-app-bar app elevate-on-scroll :color="logoColor" :height="topbarHeight" class="topbar pa-0" clipped-left>
             <v-app-bar-nav-icon tile @click.stop="naviDrawer = !naviDrawer" />
             <router-link to="/">
-                <template v-if="sidebarLogo">
-                    <img
-                        :src="sidebarLogo"
-                        style="height: 32px"
-                        class="nav-logo ml-4 mr-1 d-none d-sm-flex"
-                        alt="Logo" />
-                </template>
-                <template v-else>
-                    <mainsail-logo
-                        :color="logoColor"
-                        style="height: 32px"
-                        class="nav-logo ml-4 mr-1 d-none d-sm-flex"
-                        router
-                        to="/"
-                        :ripple="false" />
-                </template>
+                <inline-svg v-if="sidebarLogo && isSvgLogo" :src="sidebarLogo" :class="logoClasses" />
+                <img v-else-if="sidebarLogo" :src="sidebarLogo" :class="logoClasses" alt="Logo" />
+                <mainsail-logo v-else :color="logoColor" :class="logoClasses" router to="/" :ripple="false" />
             </router-link>
             <v-toolbar-title class="text-no-wrap ml-0 pl-2 mr-2">{{ printerName }}</v-toolbar-title>
             <printer-selector v-if="countPrinters" />
@@ -116,7 +103,7 @@
             <the-settings-menu />
             <the-top-corner-menu />
         </v-app-bar>
-        <v-snackbar v-model="uploadSnackbar.status" :timeout="-1" :value="true" fixed right bottom>
+        <v-snackbar v-model="uploadSnackbar.status" :timeout="-1" fixed right bottom>
             <strong>{{ $t('App.TopBar.Uploading') }} {{ uploadSnackbar.filename }}</strong>
             <br />
             {{ Math.round(uploadSnackbar.percent) }} % @ {{ formatFilesize(Math.round(uploadSnackbar.speed)) }}/s
@@ -128,26 +115,7 @@
                 </v-btn>
             </template>
         </v-snackbar>
-        <v-dialog v-model="showEmergencyStopDialog" width="400" :fullscreen="isMobile">
-            <panel
-                :title="$t('EmergencyStopDialog.EmergencyStop')"
-                toolbar-color="error"
-                card-class="emergency-stop-dialog"
-                :icon="mdiAlertOctagonOutline"
-                :margin-bottom="false">
-                <template #buttons>
-                    <v-btn icon tile @click="showEmergencyStopDialog = false">
-                        <v-icon>{{ mdiCloseThick }}</v-icon>
-                    </v-btn>
-                </template>
-                <v-card-text>{{ $t('EmergencyStopDialog.AreYouSure') }}</v-card-text>
-                <v-card-actions>
-                    <v-spacer />
-                    <v-btn text @click="showEmergencyStopDialog = false">{{ $t('EmergencyStopDialog.No') }}</v-btn>
-                    <v-btn color="primary" text @click="emergencyStop">{{ $t('EmergencyStopDialog.Yes') }}</v-btn>
-                </v-card-actions>
-            </panel>
-        </v-dialog>
+        <emergency-stop-dialog v-model="showEmergencyStopDialog" />
     </div>
 </template>
 
@@ -165,16 +133,10 @@ import PrinterSelector from '@/components/ui/PrinterSelector.vue'
 import MainsailLogo from '@/components/ui/MainsailLogo.vue'
 import TheNotificationMenu from '@/components/notifications/TheNotificationMenu.vue'
 import { topbarHeight } from '@/store/variables'
-import {
-    mdiAlertOctagonOutline,
-    mdiContentSave,
-    mdiFileUpload,
-    mdiClose,
-    mdiCloseThick,
-    mdiPause,
-    mdiPlay,
-    mdiStop,
-} from '@mdi/js'
+import { mdiAlertOctagonOutline, mdiContentSave, mdiFileUpload, mdiClose, mdiCloseThick, mdiPause, mdiPlay, mdiStop } from '@mdi/js'
+import EmergencyStopDialog from '@/components/dialogs/EmergencyStopDialog.vue'
+import InlineSvg from 'vue-inline-svg'
+import ThemeMixin from '@/components/mixins/theme'
 
 type uploadSnackbar = {
     status: boolean
@@ -187,6 +149,8 @@ type uploadSnackbar = {
 
 @Component({
     components: {
+        EmergencyStopDialog,
+        InlineSvg,
         Panel,
         TheSettingsMenu,
         TheTopCornerMenu,
@@ -195,7 +159,7 @@ type uploadSnackbar = {
         TheNotificationMenu,
     },
 })
-export default class TheTopbar extends Mixins(BaseMixin) {
+export default class TheTopbar extends Mixins(BaseMixin, ThemeMixin) {
     mdiAlertOctagonOutline = mdiAlertOctagonOutline
     mdiContentSave = mdiContentSave
     mdiFileUpload = mdiFileUpload
@@ -266,10 +230,6 @@ export default class TheTopbar extends Mixins(BaseMixin) {
         return this.$store.state.printer.hostname
     }
 
-    get boolWideNavDrawer() {
-        return this.$store.state.gui.uiSettings.boolWideNavDrawer ?? false
-    }
-
     get countPrinters() {
         return this.$store.getters['farm/countPrinters']
     }
@@ -278,12 +238,16 @@ export default class TheTopbar extends Mixins(BaseMixin) {
         return this.$store.state.gui.uiSettings.boolHideUploadAndPrintButton ?? false
     }
 
-    get sidebarLogo(): string {
-        return this.$store.getters['files/getSidebarLogo']
+    get isSvgLogo() {
+        return this.sidebarLogo.includes('.svg?timestamp=') || this.sidebarLogo.endsWith('.svg')
     }
 
     get logoColor(): string {
         return this.$store.state.gui.uiSettings.logo
+    }
+
+    get logoClasses() {
+        return ['nav-logo', 'ml-2', 'mr-1', 'd-none', 'd-sm-flex']
     }
 
     get boolShowUploadAndPrint() {
@@ -467,6 +431,10 @@ export default class TheTopbar extends Mixins(BaseMixin) {
 .topbar .v-btn {
     height: 100% !important;
     max-height: none;
+}
+::v-deep .topbar .nav-logo {
+    width: auto;
+    height: 32px;
 }
 /*noinspection CssUnusedSymbol*/
 .topbar .v-btn.v-btn--icon {

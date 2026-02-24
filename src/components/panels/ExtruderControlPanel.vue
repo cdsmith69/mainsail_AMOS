@@ -135,14 +135,9 @@ import { Component, Mixins } from 'vue-property-decorator'
 import { PrinterStateMacro } from '@/store/printer/types'
 import BaseMixin from '@/components/mixins/base'
 import ControlMixin from '@/components/mixins/control'
-import Panel from '@/components/ui/Panel.vue'
 import ExtruderMixin from '@/components/mixins/extruder'
 
-@Component({
-    components: {
-        Panel,
-    },
-})
+@Component
 export default class ExtruderControlPanel extends Mixins(BaseMixin, ControlMixin, ExtruderMixin) {
     mdiPrinter3dNozzle = mdiPrinter3dNozzle
     mdiDotsVertical = mdiDotsVertical
@@ -223,13 +218,13 @@ export default class ExtruderControlPanel extends Mixins(BaseMixin, ControlMixin
         return this.$store.state.gui.view.extruder.showExtrusionFactor ?? true
     }
 
-    get existsPressureAdvance(): boolean {
-        return !(this.$store.getters['printer/getExtruderSteppers'].length > 0)
+    get extruderSteppers() {
+        return Object.keys(this.$store.state.printer)
+            .filter((e) => e.startsWith('extruder_stepper '))
+            .sort((a, b) => a.localeCompare(b))
     }
 
     get showPressureAdvance(): boolean {
-        if (!this.existsPressureAdvance) return false
-
         return this.$store.state.gui.view.extruder.showPressureAdvance ?? true
     }
 

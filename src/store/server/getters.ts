@@ -13,8 +13,8 @@ export const getters: GetterTree<ServerState, any> = {
                 const date = events.length ? events[0].date : new Date()
                 let message = ''
 
-                message += '<a class="command text--green">LulzBot Mini 3 Ready!</a> \n'
-                message += 'Upload or select a file from \n above to start your print'
+                message += '<a class="command text--green">Advanced Manufacturing Operational System\nAMOS Ready!</a> \n'
+                message += 'Upload or select a file from above to start your print'
 
                 events.unshift({
                     date: date,

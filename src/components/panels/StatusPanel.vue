@@ -213,6 +213,14 @@ export default class StatusPanel extends Mixins(BaseMixin) {
     mdiAlertOutline = mdiAlertOutline
     mdiCloseCircle = mdiCloseCircle
     mdiDotsVertical = mdiDotsVertical
+    mdiFileDocumentMultipleOutline = mdiFileDocumentMultipleOutline
+    mdiInformation = mdiInformation
+    mdiHistory = mdiHistory
+    mdiMessageProcessingOutline = mdiMessageProcessingOutline
+    mdiSpeedometer = mdiSpeedometer
+    mdiStopCircleOutline = mdiStopCircleOutline
+    mdiFileUpload = mdiFileUpload
+    mdiTrayFull = mdiTrayFull
     mdiAlertOutline = mdiAlertOutline
     mdiFileUpload = mdiFileUpload
     mdiUpload = mdiUpload
@@ -434,6 +442,18 @@ export default class StatusPanel extends Mixins(BaseMixin) {
 
     get displayPauseAtLayerButton() {
         return this.layer_count !== null && (this.existsSetPauseAtLayer || this.existsSetPauseNextLayer)
+    }
+
+    get displayFilesTab() {
+        const count = this.$store.state.gui.uiSettings.dashboardFilesLimit ?? 5
+
+        return count > 0
+    }
+
+    get displayHistoryTab() {
+        const count = this.$store.state.gui.uiSettings.dashboardHistoryLimit ?? 5
+
+        return count > 0
     }
 
     get currentPage() {
